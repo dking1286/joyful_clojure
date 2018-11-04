@@ -1,4 +1,4 @@
-(defproject joyful-clojure-01
+(defproject joyful-clojure-01 "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.9.0"]]
   :source-paths ["src"]
   :main main)
