@@ -2,3 +2,4 @@
 */.lein-*
 .nrepl-port
 Clojure REPL
+profiles.clj
