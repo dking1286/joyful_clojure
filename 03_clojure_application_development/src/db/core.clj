@@ -3,7 +3,7 @@
             [environ.core :refer [env]]))
 
 (def connection
-  (postgres {:dbname (:database-name env)
+  (postgres {:db (:database-name env)
              :user (:database-username env)
              :password (:database-password env)
              :host (:database-host env)
