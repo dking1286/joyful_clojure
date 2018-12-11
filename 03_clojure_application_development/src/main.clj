@@ -1,9 +1,9 @@
 (ns main
-  (:require [ring.middleware.json :refer [wrap-json-body
-                                          wrap-json-response]]
-            [routes :refer [root-handler]]))
+  (:require [ring.adapter.jetty :refer [run-jetty]]
+            [environ.core :refer [env]]
+            [app :refer [app]])
+  (:gen-class))
 
-(def app
-  (-> root-handler
-      wrap-json-response
-      (wrap-json-body {:keywords? true})))
+(defn -main
+  [& args]
+  (run-jetty app {:port (Integer/valueOf (:port env))}))

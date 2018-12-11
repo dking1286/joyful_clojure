@@ -14,3 +14,6 @@ dev-database:
 
 dev-database-connection:
 	docker exec -it local-postgres psql -U postgres
+
+prod-build:
+	lein with-profile +prod uberjar

@@ -2,12 +2,12 @@
   (:refer-clojure :exclude [update])
   (:require [korma.core :refer :all]
             [korma.db :refer :all]
-            [db.core :refer [db]]))
+            [db.core :refer [db]]
+            [utils.errors :refer [not-found]]))
 
 (defentity urls
   (database db)
-  (table :urls)
-  (entity-fields :id :url))
+  (table :urls))
 
 (defn get-url-handler
   [req]
@@ -15,7 +15,7 @@
         result (select urls (where (= :id id)))
         url (first result)]
     (if-not url
-      {:status 404}
+      (throw (not-found))
       {:status 200 :body url})))
 
 (defn create-url-handler
