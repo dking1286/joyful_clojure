@@ -1,0 +1,8 @@
+{:insert-fn com.shortify.api.urls/create-url
+ :component :urls
+ :data [{:id "12345"
+         :url "https://someawesomewebsite.com"}
+        {:id "67890"
+         :url "https://anotherwebsite.com?some=param"}
+        {:id "23456"
+         :url "https://myspace.com"}]}
