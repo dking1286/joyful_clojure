@@ -1,5 +1,5 @@
-{:insert-fn com.shortify.api.urls/create-url
- :component :urls
+{:insert-fn com.shortify.api.urls.service/create-url
+ :component :urls-service
  :data [{:id "12345"
          :url "https://someawesomewebsite.com"}
         {:id "67890"

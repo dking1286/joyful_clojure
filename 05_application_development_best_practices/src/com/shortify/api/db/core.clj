@@ -3,7 +3,10 @@
   (:import [org.postgresql.util PSQLException])
   (:require [clojure.string :as string]
             [com.stuartsierra.component :as component]
-            [korma.db :refer [create-db default-connection postgres]]
+            [korma.db :refer [create-db
+                              with-db
+                              postgres
+                              transaction]]
             [korma.core :refer :all]
             [ragtime.repl :as ragtime]
             [ragtime.jdbc :as jdbc]
@@ -31,6 +34,7 @@
 
 (defprotocol IDatabase
   (connect-to-entity [this entity])
+  (invoke-in-transaction [this f])
   (create-migration! [this name])
   (migrate-up! [this])
   (rollback! [this])
@@ -62,8 +66,11 @@
 
   IDatabase
   (connect-to-entity [this entity]
-    (database entity (:connection this))
-    entity)
+    (database entity (:connection this)))
+
+  (invoke-in-transaction [this f]
+    (with-db (:connection this)
+             (transaction (f))))
 
   (create-migration! [_ name]
     (let [timestamp (time-coerce/to-long (time/now))
@@ -92,3 +99,7 @@
             :password (:database-password env)
             :host (:database-host env)
             :port (:database-port env)}))
+
+(defmacro with-transaction
+  [db & body]
+  `(invoke-in-transaction db (fn [] ~@body)))

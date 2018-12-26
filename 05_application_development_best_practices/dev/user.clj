@@ -3,10 +3,10 @@
             [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
             [com.shortify.api.system]
-            [com.shortify.api.db.core :refer [create-migration!
-                                              migrate-up!
-                                              rollback!
-                                              migrate-down!]]))
+            [com.shortify.api.db.core :as db]
+            [com.shortify.api.db.seed :as seed]))
+
+;; System management functions
 
 (defonce system nil)
 
@@ -36,3 +36,27 @@
   []
   (stop)
   (refresh :after 'user/go))
+
+;; Database management functions
+
+(defn migrate-up!
+  []
+  (let [database (:db system)]
+    (db/migrate-up! database)))
+
+(defn rollback!
+  []
+  (let [database (:db system)]
+    (db/rollback! database)))
+
+(defn migrate-down!
+  []
+  (let [database (:db system)]
+    (db/migrate-down! database)))
+
+;; Database seeding functions
+
+(defn insert-all-seeds!
+  []
+  (let [db-seeder (:db-seeder system)]
+    (seed/insert-all-seeds! db-seeder)))
