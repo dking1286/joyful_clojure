@@ -1,5 +1,4 @@
 (ns com.shortify.api.db.core
-  (:refer-clojure :exclude [update])
   (:import [org.postgresql.util PSQLException])
   (:require [clojure.string :as string]
             [clojure.java.jdbc :as jdbc]
@@ -9,6 +8,20 @@
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]))
 
+(defn- conflict-error
+  [e]
+  (ex-info (.getMessage e) {:type :conflict-error}))
+
+(defn get-error
+  [e]
+  (let [message (.getMessage e)]
+    (cond
+      (string/includes? message
+                        "duplicate key value violates unique constraint")
+      (conflict-error e)
+
+      :else e)))
+
 (defn- get-migration-config
   [db]
   (let [{:keys [connection]} db]
@@ -17,13 +30,21 @@
 
 (defn- get-migration-count
   [db]
-  (let [{:keys [connection]} db
-        query ["SELECT COUNT(*) FROM ragtime_migrations"]]
-    (-> (jdbc/query connection query)
-        first
-        :count)))
+  (try
+    (let [{:keys [connection]} db
+          query ["SELECT COUNT(*) FROM ragtime_migrations"]
+          result (jdbc/query connection query)]
+      (:count (first result)))
+    (catch PSQLException e
+      (if (string/includes? (.getMessage e)
+                            "ragtime_migrations")
+        0
+        (throw e)))))
 
 (defprotocol IDatabase
+  (query [this q])
+  (execute! [this q])
+  (insert! [this table values])
   (create-migration! [this name])
   (migrate-up! [this])
   (rollback! [this])
@@ -44,6 +65,24 @@
     (assoc this :connection nil))
 
   IDatabase
+  (query [this q]
+    (try
+      (jdbc/query (:connection this) q)
+      (catch PSQLException e
+        (throw (get-error e)))))
+
+  (execute! [this q]
+    (try
+      (jdbc/execute! (:connection this) q)
+      (catch PSQLException e
+        (throw (get-error e)))))
+
+  (insert! [this table values]
+    (try
+      (jdbc/insert! (:connection this) table values)
+      (catch PSQLException e
+        (throw (get-error e)))))
+
   (create-migration! [_ name]
     (let [timestamp (time-coerce/to-long (time/now))
           up-name (str "resources/migrations/" timestamp "-"

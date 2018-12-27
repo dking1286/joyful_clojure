@@ -4,6 +4,7 @@
             [environ.core :refer [env]]
             [com.shortify.api.system]
             [com.shortify.api.db.core :as db]
+            [com.shortify.api.urls.service :as urls-service]
             [com.shortify.api.db.seed :as seed]))
 
 ;; System management functions
@@ -60,3 +61,15 @@
   []
   (let [db-seeder (:db-seeder system)]
     (seed/insert-all-seeds! db-seeder)))
+
+;; Urls service
+
+(defn get-url
+  [id]
+  (let [{:keys [urls-service]} system]
+    (urls-service/get-url urls-service id)))
+
+(defn create-url
+  [values]
+  (let [{:keys [urls-service]} system]
+    (urls-service/create-url urls-service values)))
