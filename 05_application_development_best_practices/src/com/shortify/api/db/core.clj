@@ -2,76 +2,48 @@
   (:refer-clojure :exclude [update])
   (:import [org.postgresql.util PSQLException])
   (:require [clojure.string :as string]
+            [clojure.java.jdbc :as jdbc]
             [com.stuartsierra.component :as component]
-            [korma.db :refer [create-db
-                              with-db
-                              postgres
-                              transaction]]
-            [korma.core :refer :all]
             [ragtime.repl :as ragtime]
-            [ragtime.jdbc :as jdbc]
+            [ragtime.jdbc]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]))
 
 (defn- get-migration-config
   [db]
-  (let [{:keys [spec]} db]
-    {:datastore (jdbc/sql-database spec)
-     :migrations (jdbc/load-resources "migrations")}))
+  (let [{:keys [connection]} db]
+    {:datastore (ragtime.jdbc/sql-database connection)
+     :migrations (ragtime.jdbc/load-resources "migrations")}))
 
 (defn- get-migration-count
   [db]
-  (let [{:keys [migrations]} db]
-    (try
-      (-> (select migrations (aggregate (count :id) :count))
-          first
-          :count)
-      (catch PSQLException e
-        (if (string/includes? (.getMessage e)
-                              "\"ragtime_migrations\" does not exist")
-          0
-          (throw e))))))
+  (let [{:keys [connection]} db
+        query ["SELECT COUNT(*) FROM ragtime_migrations"]]
+    (-> (jdbc/query connection query)
+        first
+        :count)))
 
 (defprotocol IDatabase
-  (connect-to-entity [this entity])
-  (invoke-in-transaction [this f])
   (create-migration! [this name])
   (migrate-up! [this])
   (rollback! [this])
-  (migrate-down! [this])
-  (seed-all! [this]))
+  (migrate-down! [this]))
 
-(defrecord DB [db-name user password host port]
+(defrecord DB [dbname user password host port]
   component/Lifecycle
   (start [this]
-    (let [spec (postgres {:db db-name
-                          :user user
-                          :password password
-                          :host host
-                          :port port})
-          connection (create-db spec)
-          migrations (-> (create-entity "ragtime_migrations")
-                         (table :ragtime_migrations)
-                         (database connection))]
-      (-> this
-          (assoc :spec spec)
-          (assoc :connection connection)
-          (assoc :migrations migrations))))
+    (let [conn {:dbtype "postgresql"
+                :dbname dbname
+                :host host
+                :port port
+                :user user
+                :password password}]
+      (assoc this :connection conn)))
 
   (stop [this]
-    (-> this
-        (assoc :spec nil)
-        (assoc :connection nil)
-        (assoc :migrations nil)))
+    (assoc this :connection nil))
 
   IDatabase
-  (connect-to-entity [this entity]
-    (database entity (:connection this)))
-
-  (invoke-in-transaction [this f]
-    (with-db (:connection this)
-             (transaction (f))))
-
   (create-migration! [_ name]
     (let [timestamp (time-coerce/to-long (time/now))
           up-name (str "resources/migrations/" timestamp "-"
@@ -94,12 +66,8 @@
 
 (defn db
   [env]
-  (map->DB {:db-name (:database-name env)
+  (map->DB {:dbname (:database-name env)
             :user (:database-username env)
             :password (:database-password env)
             :host (:database-host env)
             :port (:database-port env)}))
-
-(defmacro with-transaction
-  [db & body]
-  `(invoke-in-transaction db (fn [] ~@body)))

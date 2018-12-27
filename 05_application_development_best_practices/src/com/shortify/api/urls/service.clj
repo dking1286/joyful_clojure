@@ -1,9 +1,6 @@
 (ns com.shortify.api.urls.service
   (:refer-clojure :exclude [update])
-  (:require [com.stuartsierra.component :as component]
-            [korma.core :refer :all]
-            [com.shortify.api.db.core :refer [connect-to-entity
-                                              with-transaction]]))
+  (:require [com.stuartsierra.component :as component]))
 
 (defn- create-random-uuid
   []
@@ -15,27 +12,14 @@
 
 (defrecord UrlsService [db]
   component/Lifecycle
-  (start [this]
-    (let [entity (create-entity :urls)]
-      (-> this
-          (assoc :entity (connect-to-entity db entity)))))
+  (start [this])
 
-  (stop [this]
-    (-> this
-        (assoc :entity nil)))
+  (stop [this])
 
   IUrlsService
-  (create-url [this data]
-    (let [{:keys [db entity]} this
-          id (create-random-uuid)
-          url (merge {:id id} data)]
-      (with-transaction db
-       (insert entity (values url)))
-      (get-url this id)))
+  (create-url [this data])
 
-  (get-url [this id]
-    (let [query-result (select (:entity this) (where (= :id id)))]
-      (first query-result))))
+  (get-url [this id]))
 
 (defn urls-service
   []

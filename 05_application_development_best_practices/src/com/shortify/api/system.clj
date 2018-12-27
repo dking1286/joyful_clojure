@@ -29,7 +29,8 @@
    :post [(s/valid? ::system %)]}
   (component/system-map
    :db (db env)
-   :urls-service (component/using (urls-service)
-                                  [:db])
-   :db-seeder (component/using (db-seeder)
-                               [:urls-service])))
+   ; :urls-service (component/using (urls-service)
+   ;                                [:db])
+   ; :db-seeder (component/using (db-seeder)
+   ;                             [:urls-service])
+   ))
