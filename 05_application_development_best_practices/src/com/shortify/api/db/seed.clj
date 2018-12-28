@@ -38,13 +38,14 @@
       (insert-seed-values @insert-fn-var component data))))
 
 (defn- get-seed-files
-  []
-  (.listFiles (io/file (io/resource "seeds"))))
+  [db-seeder]
+  (let [{:keys [resource-path]} db-seeder]
+    (.listFiles (io/file (io/resource resource-path)))))
 
 (defprotocol IDbSeeder
   (insert-all-seeds! [this]))
 
-(defrecord DbSeeder [db urls-service]
+(defrecord DbSeeder [resource-path]
   component/Lifecycle
   (start [this] this)
   (stop [this] this)
@@ -57,5 +58,5 @@
           (insert-seed this seed))))))
 
 (defn db-seeder
-  []
-  (map->DbSeeder {}))
+  [{:keys [resource-path] :as opts}]
+  (map->DbSeeder opts))

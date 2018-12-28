@@ -5,6 +5,7 @@
                  [ring "1.7.1"]
                  [ring/ring-json "0.4.0"]
                  [ring-logger "1.0.1"]
+                 [ring-jetty-component "0.3.1"]
                  [compojure "1.6.1"]
                  [org.postgresql/postgresql "42.2.5"]
                  [org.clojure/java.jdbc "0.7.8"]
