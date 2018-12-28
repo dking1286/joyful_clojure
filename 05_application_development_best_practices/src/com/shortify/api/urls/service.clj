@@ -1,10 +1,7 @@
 (ns com.shortify.api.urls.service
   (:require [com.stuartsierra.component :as component]
-            [com.shortify.api.db.core :as db]))
-
-(defn- create-random-uuid
-  []
-  (.toString (java.util.UUID/randomUUID)))
+            [com.shortify.api.db.core :as db]
+            [com.shortify.api.utils.uuid :refer [create-random-uuid]]))
 
 (defprotocol IUrlsService
   (create-url [this data])

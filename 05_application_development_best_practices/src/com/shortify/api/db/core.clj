@@ -6,7 +6,20 @@
             [ragtime.repl :as ragtime]
             [ragtime.jdbc]
             [clj-time.core :as time]
-            [clj-time.coerce :as time-coerce]))
+            [clj-time.coerce :as time-coerce]
+            [com.shortify.api.utils.uuid :refer [create-random-uuid]]))
+
+(def ^:private ^:dynamic *connection* nil)
+
+(defprotocol IDatabase
+  (query [this q])
+  (execute! [this q])
+  (insert! [this table values])
+  (invoke-in-transaction [this f])
+  (create-migration! [this name])
+  (migrate-up! [this])
+  (rollback! [this])
+  (migrate-down! [this]))
 
 (defn- conflict-error
   [e]
@@ -41,47 +54,77 @@
         0
         (throw e)))))
 
-(defprotocol IDatabase
-  (query [this q])
-  (execute! [this q])
-  (insert! [this table values])
-  (create-migration! [this name])
-  (migrate-up! [this])
-  (rollback! [this])
-  (migrate-down! [this]))
+(defn- create-random-database-name
+  []
+  (as-> (create-random-uuid) $
+        (string/split $ #"-")
+        (string/join $)
+        (str "temp_database_" $)))
 
-(defrecord DB [dbname user password host port]
+(defn- init-transient-database
+  [db]
+  (let [{:keys [connection dbname]} db
+        temp-connection (assoc connection :dbname "postgres")
+        create-database-query [(str "CREATE DATABASE " dbname ";")]]
+    (jdbc/execute! temp-connection
+                   create-database-query
+                   {:transaction? false})
+    (migrate-up! db)))
+
+(defn- drop-transient-database
+  [db]
+  (let [{:keys [connection dbname]} db
+        temp-connection (assoc connection :dbname "postgres")
+        drop-database-query [(str "DROP DATABASE " dbname ";")]]
+    (jdbc/execute! temp-connection
+                   drop-database-query
+                   {:transaction? false})))
+
+(defrecord DB [dbname user password host port transient?]
   component/Lifecycle
   (start [this]
-    (let [conn {:dbtype "postgresql"
-                :dbname dbname
-                :host host
-                :port port
-                :user user
-                :password password}]
-      (assoc this :connection conn)))
+    (let [connection {:dbtype "postgresql"
+                      :dbname dbname
+                      :host host
+                      :port port
+                      :user user
+                      :password password}
+          component (assoc this :connection connection)]
+      (when transient?
+        (init-transient-database component))
+      component))
 
   (stop [this]
+    (when transient?
+      (drop-transient-database this))
     (assoc this :connection nil))
 
   IDatabase
   (query [this q]
     (try
-      (jdbc/query (:connection this) q)
+      (binding [*connection* (or *connection* (:connection this))]
+        (jdbc/query *connection* q))
       (catch PSQLException e
         (throw (get-error e)))))
 
   (execute! [this q]
     (try
-      (jdbc/execute! (:connection this) q)
+      (binding [*connection* (or *connection* (:connection this))]
+        (jdbc/execute! *connection* q))
       (catch PSQLException e
         (throw (get-error e)))))
 
   (insert! [this table values]
     (try
-      (jdbc/insert! (:connection this) table values)
+      (binding [*connection* (or *connection* (:connection this))]
+        (jdbc/insert! *connection* table values))
       (catch PSQLException e
         (throw (get-error e)))))
+
+  (invoke-in-transaction [this f]
+    (jdbc/with-db-transaction [trx (:connection this)]
+                              (binding [*connection* trx]
+                                (f trx))))
 
   (create-migration! [_ name]
     (let [timestamp (time-coerce/to-long (time/now))
@@ -110,3 +153,16 @@
             :password (:database-password env)
             :host (:database-host env)
             :port (:database-port env)}))
+
+(defn transient-db
+  [env]
+  (map->DB {:dbname (create-random-database-name)
+            :user (:database-username env)
+            :password (:database-password env)
+            :host (:database-host env)
+            :port (:database-port env)
+            :transient? true}))
+
+(defmacro with-transaction
+  [[trx-sym db-sym] & body]
+  `(invoke-in-transaction ~db-sym (fn [~trx-sym] ~@body)))

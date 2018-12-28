@@ -1,8 +1,9 @@
 (ns user
   (:require [clojure.tools.namespace.repl :refer [refresh]]
+            [clojure.java.jdbc :as jdbc]
             [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
-            [com.shortify.api.system]
+            [com.shortify.api.system :as sys]
             [com.shortify.api.db.core :as db]
             [com.shortify.api.urls.service :as urls-service]
             [com.shortify.api.db.seed :as seed]))
@@ -15,7 +16,7 @@
   []
   (println "Initializing system...")
   (alter-var-root #'system
-                  (constantly (com.shortify.api.system/system env))))
+                  (constantly (sys/system env))))
 
 (defn start
   []
@@ -61,6 +62,18 @@
   []
   (let [db-seeder (:db-seeder system)]
     (seed/insert-all-seeds! db-seeder)))
+
+;; Low level database querying functions
+
+(defn query
+  [q]
+  (let [{:keys [db]} system]
+    (db/query db q)))
+
+(defn execute!
+  [q]
+  (let [{:keys [db]} system]
+    (db/execute! db q)))
 
 ;; Urls service
 

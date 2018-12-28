@@ -1,7 +1,7 @@
 (ns com.shortify.api.system
   (:require [clojure.spec.alpha :as s]
             [com.stuartsierra.component :as component]
-            [com.shortify.api.db.core :refer [db]]
+            [com.shortify.api.db.core :refer [db transient-db]]
             [com.shortify.api.urls.service :refer [urls-service]]
             [com.shortify.api.db.seed :refer [db-seeder]]))
 
@@ -31,6 +31,11 @@
    :db (db env)
    :urls-service (component/using (urls-service)
                                   [:db])
-   ; :db-seeder (component/using (db-seeder)
-   ;                             [:urls-service])
-   ))
+   :db-seeder (component/using (db-seeder)
+                               [:urls-service])))
+(defn test-system
+  [env]
+  {:pre [(s/valid? ::env env)]
+   :post [(s/valid? ::system %)]}
+  (assoc (system env)
+         :db (transient-db env)))

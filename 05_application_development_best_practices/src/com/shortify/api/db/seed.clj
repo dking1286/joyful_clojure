@@ -28,10 +28,11 @@
     (cond
       (nil? insert-fn-var)
       (throw (ex-info (str "insert-fn " insert-fn-name " not found")
-                      {}))
+                      {:type :seed-error}))
 
       (nil? component)
-      (throw (ex-info (str "component " component-name " not included as dependency in db-seeder")))
+      (throw (ex-info (str "component " component-name " not included as dependency in db-seeder")
+                      {:type :seed-error}))
 
       :else
       (insert-seed-values @insert-fn-var component data))))
