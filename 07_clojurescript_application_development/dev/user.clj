@@ -1,2 +1,2 @@
 (ns user
-  (:require [figwheel-sidecar.repl-api :refer [cljs-repl]]))
+  (:require [figwheel.main.api :as figwheel]))

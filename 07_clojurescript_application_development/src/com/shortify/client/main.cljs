@@ -1,4 +1,4 @@
-(ns com.shortify.client.main
+(ns ^:figwheel-hooks com.shortify.client.main
   (:require [reagent.core :as reagent]
             [re-frame.core :as rf]
             [cljs.user]
@@ -15,6 +15,8 @@
                    (fn [e]
                      (init-view)))
 
-(defn on-reload
+(defn ^:after-load on-reload
   []
   (init-view))
+
+(println "hello")
