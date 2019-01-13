@@ -18,5 +18,3 @@
 (defn ^:after-load on-reload
   []
   (init-view))
-
-(println "hello")

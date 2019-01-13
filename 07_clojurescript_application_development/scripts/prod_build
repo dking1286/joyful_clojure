@@ -1,0 +1,3 @@
+#! /bin/bash
+lein clean
+lein with-profile +client-build,+prod run -m com.shortify.client.build

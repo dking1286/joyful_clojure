@@ -1,1 +1,11 @@
-{:main com.shortify.client.main}
+;; Figwheel options for development
+^{:watch-dirs ["src" "dev"]
+  :css-dirs ["target/public/sass-out"]
+  :ring-server-options {:port 9090}
+  :rebel-readline false
+  :ansi-color-output false
+  :auto-testing true
+  :npm {:bundles {"target/public/foreign_libs.bundle.js" "foreign_libs.js"}}}
+;; ClojureScript compiler options for development
+{:main com.shortify.client.main
+ :output-to "target/public/cljs-out/main.js"}

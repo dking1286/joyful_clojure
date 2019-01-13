@@ -1,0 +1,10 @@
+;; Figwheel options for production
+^{:mode :build-once
+  :figwheel-core false
+  :hot-reload-cljs false
+  :npm {:bundles {"target/public/foreign_libs.bundle.js" "foreign_libs.js"}}}
+;; Clojurescript compiler options for production
+{:main com.shortify.client.main
+ :output-to "target/public/cljs-out/main.js"
+ :optimizations :advanced
+ :elide-asserts true}

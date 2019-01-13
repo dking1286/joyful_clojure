@@ -1,2 +1,2 @@
 (ns user
-  (:require [figwheel.main.api :as figwheel]))
+  (:require [com.shortify.client.build :refer [start-dev-builds]]))

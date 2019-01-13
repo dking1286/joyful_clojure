@@ -1,0 +1,3 @@
+#! /bin/bash
+lein clean
+lein with-profile +client-build,+dev,+dev-local repl

@@ -12,9 +12,12 @@
   :clean-targets ^{:protect false} ["target"]
 
   :profiles
-  {:fig {:dependencies [[com.bhauman/figwheel-main "0.2.0"]
-                        [cider/piggieback "0.3.8"]]
-         :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}}
+  {:client-build {:dependencies [[deraen/sass4clj "0.3.1"]
+                                 [com.bhauman/figwheel-main "0.2.0"]
+                                 [cider/piggieback "0.3.8"]
+                                 [hawk "0.2.11"]]
+                  :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}
+                  :source-paths ["client_build"]}
 
    :dev {:source-paths ["dev"]
          :repl-options {:port 9091}}
