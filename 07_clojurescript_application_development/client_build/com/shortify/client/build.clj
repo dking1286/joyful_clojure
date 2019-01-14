@@ -2,9 +2,44 @@
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [clojure.java.shell :refer [sh]]
+            [hiccup.page :refer [html5]]
             [sass4clj.core :refer [sass-compile-to-file]]
             [hawk.core :as hawk]
             [figwheel.main.api :as figwheel]))
+
+;; HTML build functions
+
+(def html-output "target/public/index.html")
+
+(defn create-html
+  [{:keys [styles scripts defer-scripts?]}]
+  (html5
+   [:head
+    [:title "Shortify"]
+    (for [style styles]
+      [:link {:type "text/css", :href style, :rel "stylesheet"}])
+    (for [script scripts]
+      [:script {:type "text/javascript" :src script :defer defer-scripts?}])]
+   [:body
+    [:div.app]]))
+
+(defn build-html-dev
+  []
+  (let [html (create-html {:styles ["sass-out/style.css"]
+                           :scripts ["cljs-out/main.js"]
+                           :defer-scripts? false})]
+    (io/make-parents html-output)
+    (spit html-output html)))
+
+(defn build-html-prod
+  []
+  (let [html (create-html {:styles ["sass-out/style.css"]
+                           :scripts ["cljs-out/cljs_base.js"
+                                     "cljs-out/vendor.js"
+                                     "cljs-out/main.js"]
+                           :defer-scripts? true})]
+    (io/make-parents html-output)
+    (spit html-output html)))
 
 ;; Sass build functions
 
@@ -13,7 +48,6 @@
 (def sass-source-map-output "target/public/sass-out/style.css.map")
 (def sass-default-options {:output-style :compressed
                            :source-map false})
-;; TODO: Figure out if the sass-watcher survives reloading
 (defonce sass-watcher (atom nil))
 
 (defn- scss-file?
@@ -94,6 +128,7 @@
 
 (defn start-dev-builds
   []
+  (build-html-dev)
   (build-sass-dev)
   (build-foreign-libs-dev)
   (build-cljs-dev))
@@ -110,8 +145,13 @@
 
 ;; Production build functions
 
-(defn -main
-  [& args]
+(defn execute-prod-builds
+  []
+  (build-html-prod)
   (build-sass)
   (build-foreign-libs)
   (build-cljs-prod))
+
+(defn -main
+  [& args]
+  (execute-prod-builds))

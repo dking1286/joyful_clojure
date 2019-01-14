@@ -2,9 +2,26 @@
 ^{:mode :build-once
   :figwheel-core false
   :hot-reload-cljs false
+  :cljs-devtools false
   :npm {:bundles {"target/public/foreign_libs.bundle.js" "foreign_libs.js"}}}
 ;; Clojurescript compiler options for production
 {:main com.shortify.client.main
- :output-to "target/public/cljs-out/main.js"
+ :modules {:cljs-base
+           {:output-to "target/public/cljs-out/cljs-base.js"}
+
+           :vendor
+           {:entries #{"react"
+                       "react-dom"
+                       "create-react-class"
+                       "material-ui"
+                       "material-ui-icons"
+                       "reagent.core"
+                       "re-frame.core"}
+            :output-to "target/public/cljs-out/vendor.js"}
+
+           :main
+           {:entries #{"com.shortify.client.main"}
+            :depends-on #{:cljs-base :vendor}
+            :output-to "target/public/cljs-out/main.js"}}
  :optimizations :advanced
  :elide-asserts true}
