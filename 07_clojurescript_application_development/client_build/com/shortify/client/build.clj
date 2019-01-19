@@ -2,6 +2,10 @@
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [clojure.java.shell :refer [sh]]
+            [com.stuartsierra.component :as component]
+            [ring.util.response :refer [file-response]]
+            [compojure.core :refer :all]
+            [compojure.route :as route]
             [hiccup.page :refer [html5]]
             [sass4clj.core :refer [sass-compile-to-file]]
             [hawk.core :as hawk]
@@ -10,6 +14,12 @@
 ;; HTML build functions
 
 (def html-output "target/public/index.html")
+(def html-default-options
+  {:styles ["sass-out/style.css"]
+   :scripts ["cljs-out/cljs_base.js"
+             "cljs-out/vendor.js"
+             "cljs-out/main.js"]
+   :defer-scripts? true})
 
 (defn create-html
   [{:keys [styles scripts defer-scripts?]}]
@@ -23,23 +33,26 @@
    [:body
     [:div.app]]))
 
-(defn build-html-dev
-  []
-  (let [html (create-html {:styles ["sass-out/style.css"]
-                           :scripts ["cljs-out/main.js"]
-                           :defer-scripts? false})]
-    (io/make-parents html-output)
-    (spit html-output html)))
+(defn build-html
+  ([] (build-html {}))
+  ([options]
+   (let [merged-options (merge html-default-options options)
+         html (create-html merged-options)]
+     (io/make-parents html-output)
+     (spit html-output html))))
 
-(defn build-html-prod
+(defrecord HtmlDevelopmentBuilder []
+  component/Lifecycle
+  (start [this]
+    (build-html {:scripts ["cljs-out/main.js"]
+                 :defer-scripts? false})
+    this)
+  (stop [this]
+    this))
+
+(defn html-development-builder
   []
-  (let [html (create-html {:styles ["sass-out/style.css"]
-                           :scripts ["cljs-out/cljs_base.js"
-                                     "cljs-out/vendor.js"
-                                     "cljs-out/main.js"]
-                           :defer-scripts? true})]
-    (io/make-parents html-output)
-    (spit html-output html)))
+  (map->HtmlDevelopmentBuilder {}))
 
 ;; Sass build functions
 
@@ -61,29 +74,34 @@
     sass-entry sass-output (merge sass-default-options options))
    nil))
 
-(defn build-sass-dev
-  []
-  (let [sass-options {:output-style :expanded
-                      :source-map true}]
-    (build-sass sass-options)
-    (reset! sass-watcher
-            (hawk/watch! [{:paths ["src" "resources"]
-                           :filter (fn [ctx e]
-                                     (scss-file? (:file e)))
-                           :handler (fn [ctx e]
-                                      (build-sass sass-options))}]))
-    nil))
+(defrecord SassDevelopmentBuilder []
+  component/Lifecycle
+  (start [this]
+    (println "Starting sass builder...")
+    (let [sass-options {:output-style :expanded
+                        :source-map true}
+          watcher (hawk/watch! [{:paths ["src" "resources"]
+                                 :filter (fn [ctx e]
+                                           (scss-file? (:file e)))
+                                 :handler (fn [ctx e]
+                                            (build-sass sass-options))}])]
+      (build-sass sass-options)
+      (println "Sass builder started!")
+      (assoc this :watcher watcher)))
 
-(defn stop-sass-dev
+  (stop [this]
+    (let [watcher (:watcher this)]
+      (when watcher
+        (hawk/stop! watcher))
+      (assoc this :watcher nil))))
+
+(defn sass-development-builder
   []
-  (when @sass-watcher
-    (hawk/stop! @sass-watcher))
-  (reset! sass-watcher nil))
+  (map->SassDevelopmentBuilder {}))
 
 ;; Foreign libs build functions
 
 (def webpack-default-options {:mode :production})
-(def webpack-watcher (atom nil))
 
 (defn build-foreign-libs
   ([] (build-foreign-libs {}))
@@ -94,64 +112,97 @@
      (when (not (zero? exit))
        (throw (ex-info "Webpack build failed:" {:err err}))))))
 
-(defn build-foreign-libs-dev
-  []
-  (let [webpack-options {:mode :development}]
-    (build-foreign-libs webpack-options)
-    (reset! webpack-watcher
-            (hawk/watch! [{:paths ["foreign_libs.js"]
-                           :handler (fn [ctx e]
-                                      (build-foreign-libs webpack-options))}]))
-    nil))
+(defrecord ForeignLibsDevelopmentBuilder []
+  component/Lifecycle
+  (start [this]
+    (println "Starting foreign_libs build...")
+    (let [webpack-options {:mode :development}
+          watcher (hawk/watch! [{:paths ["foreign_libs.js"]
+                                 :handler (fn [ctx e]
+                                            (build-foreign-libs webpack-options))}])]
+      (build-foreign-libs webpack-options)
+      (println "Foreign libs build started!")
+      (assoc this :watcher watcher)))
 
-(defn stop-foreign-libs-dev
+  (stop [this]
+    (let [watcher (:watcher this)]
+      (when watcher
+        (hawk/stop! watcher))
+      (assoc this :watcher nil))))
+
+(defn foreign-libs-development-builder
   []
-  (when @webpack-watcher
-    (hawk/stop! @webpack-watcher))
-  (reset! webpack-watcher nil))
+  (map->ForeignLibsDevelopmentBuilder {}))
+
+;; Development server handler
+
+(def handler
+  (routes
+   (GET "/" [] "hello")
+   (route/files "/" {:root "public"})
+   (route/not-found "Not found")))
 
 ;; ClojureScript build functions
 
-(defn build-cljs-dev
-  []
-  (figwheel/start "dev"))
+(def cljs-compiler-default-options
+  {:main 'com.shortify.client.main})
 
-(defn stop-cljs-dev
-  []
-  (figwheel/stop "dev"))
+(def cljs-compiler-dev-options
+  {:output-to "target/public/cljs-out/main.js"})
 
-(defn build-cljs-prod
-  []
-  (figwheel/start "prod"))
+(def cljs-compiler-prod-options
+  {}) ;; FIXME
 
-;; Development build function
+(def figwheel-dev-options
+  {:id "dev"
+   ;; ClojureScript compiler options
+   :options (merge cljs-compiler-default-options
+                   cljs-compiler-dev-options)
+   ;; Figwheel configuration options
+   :config {:watch-dirs ["src" "dev"]
+            :css-dirs ["target/public/sass-out"]
+            :ring-server-options {:port 9092}
+            :ring-handler 'com.shortify.client.build/handler
+            :auto-testing true
+            :ansi-colors false
+            :mode :serve
+            :npm {:bundles {"target/public/foreign_libs.bundle.js" "foreign_libs.js"}}}})
 
-(defn start-dev-builds
-  []
-  (build-html-dev)
-  (build-sass-dev)
-  (build-foreign-libs-dev)
-  (build-cljs-dev))
+(def figwheel-prod-options
+  {}) ;; FIXME
 
-(defn stop-dev-builds
+(defrecord CljsDevelopmentBuilder []
+  component/Lifecycle
+  (start [this]
+    (try
+      (println "Starting cljs build...")
+      (figwheel/start figwheel-dev-options)
+      (println "Cljs build started!")
+      (assoc this :started? true)
+      (catch RuntimeException e
+        (println "Error while starting cljs builder: ")
+        (println e)
+        this)))
+
+  (stop [this]
+    (when (:started? this)
+      (figwheel/stop (:id figwheel-dev-options)))
+    (assoc this :started? nil)))
+
+(defn cljs-development-builder
   []
-  (stop-sass-dev)
-  (stop-foreign-libs-dev)
-  (stop-cljs-dev))
+  (map->CljsDevelopmentBuilder {}))
 
 (defn cljs-repl
   []
-  (figwheel/cljs-repl "dev"))
+  (figwheel/cljs-repl (:id figwheel-dev-options)))
 
-;; Production build functions
+;; Development build functions
 
-(defn execute-prod-builds
+(defn dev-build-system
   []
-  (build-html-prod)
-  (build-sass)
-  (build-foreign-libs)
-  (build-cljs-prod))
-
-(defn -main
-  [& args]
-  (execute-prod-builds))
+  (component/system-map
+   :html-development-builder (html-development-builder)
+   :sass-development-builder (sass-development-builder)
+   :foreign-libs-development-builder (foreign-libs-development-builder)
+   :cljs-development-builder (cljs-development-builder)))
