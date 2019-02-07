@@ -1,11 +1,17 @@
 (defproject joyful-clojure-03 "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.9.0"]
+                 [cheshire "5.8.1"]
                  [ring "1.7.1"]
                  [ring/ring-json "0.4.0"]
                  [ring-logger "1.0.1"]
                  [compojure "1.6.1"]
                  [korma "0.4.3"]
-                 [org.postgresql/postgresql "9.2-1002-jdbc4"]
+                 [log4j "1.2.15"
+                  :exclusions [javax.mail/mail
+                               javax.jms/jms
+                               com.sun.jdmk/jmxtools
+                               com.sun.jmx/jmxri]]
+                 [org.postgresql/postgresql "42.2.5"]
                  [ragtime "0.7.2"]
                  [environ "1.1.0"]
                  [clj-time "0.15.0"]
@@ -15,6 +21,7 @@
             [lein-environ "1.1.0"]]
 
   :source-paths ["src"]
+  :test-paths ["tests"]
   :target-path "target/%s"
 
   :ring {:handler app/app
@@ -25,7 +32,10 @@
   :profiles
   {:dev {:env {:environment "development"}}
 
-   :test {:env {:environment "test"}}
+   :test {:env {:environment "test"}
+          :dependencies [[pjstadig/humane-test-output "0.9.0"]]
+          :injections [(require 'pjstadig.humane-test-output)
+                       (pjstadig.humane-test-output/activate!)]}
 
    :prod {:env {:environment "production"}
           :uberjar-name "app-standalone.jar"

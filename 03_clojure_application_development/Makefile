@@ -1,5 +1,5 @@
 dev-server:
-	lein with-profile +dev ring server-headless
+	lein with-profile +dev,+dev-local ring server-headless
 
 dev-database:
 	docker run \
@@ -10,10 +10,13 @@ dev-database:
 		-d \
 		-p 8082:5432 \
 		-v $$HOME/docker/volumes/postgres:/var/lib/postgresql/data \
-		postgres:9.6-alpine
+		postgres:alpine
 
 dev-database-connection:
 	docker exec -it local-postgres psql -U postgres
 
 prod-build:
 	lein with-profile +prod uberjar
+
+test:
+	lein with-profile +test,+test-local test :once

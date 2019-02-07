@@ -1,6 +1,8 @@
 (ns db.migration
   (:refer-clojure :exclude [update])
-  (:require [ragtime.jdbc :as jdbc]
+  (:import [org.postgresql.util PSQLException])
+  (:require [clojure.string :as string]
+            [ragtime.jdbc :as jdbc]
             [ragtime.repl :as ragtime]
             [korma.core :refer :all]
             [db.core :refer [db connection]]
@@ -18,10 +20,15 @@
 
 (defn get-migration-count
   []
-  (-> (select ragtime-migrations
-              (aggregate (count :id) :count))
-      first
-      :count))
+  (try
+    (-> (select ragtime-migrations (aggregate (count :id) :count))
+        first
+        :count)
+    (catch PSQLException e
+      (if (string/includes? (.getMessage e)
+                            "\"ragtime_migrations\" does not exist")
+        0
+        (throw e)))))
 
 (defn create-migration!
   [name]
