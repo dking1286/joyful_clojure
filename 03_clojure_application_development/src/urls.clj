@@ -1,19 +1,30 @@
 (ns urls
   (:refer-clojure :exclude [update])
-  (:require [korma.core :refer :all]
-            [korma.db :refer :all]
-            [db.core :refer [db]]
+  (:require [clojure.java.jdbc :as jdbc]
+            [db.core :refer [connection-2]]
             [utils.errors :refer [not-found]]))
 
-(defentity urls
-  (database db)
-  (table :urls))
+(defn get-url-by-id
+  "Gets the url from the database with the given id, or nil if no such
+   url exists."
+  [id]
+  (let [query ["SELECT * FROM urls WHERE id = ?"  id]
+        result (jdbc/query connection-2 query)]
+    (first result)))
+
+(defn create-url!
+  "Given a url as a string, creates a url row in the database and returns
+   the created row."
+  [url]
+  (let [id (.toString (java.util.UUID/randomUUID))
+        row {:url url :id id}
+        result (jdbc/insert! connection-2 :urls row)]
+    (first result)))
 
 (defn get-url-handler
   [req]
   (let [id (get-in req [:params :id])
-        result (select urls (where (= :id id)))
-        url (first result)]
+        url (get-url-by-id id)]
     (if-not url
       (throw (not-found))
       {:status 200 :body url})))
@@ -21,8 +32,5 @@
 (defn create-url-handler
   [req]
   (let [url (get-in req [:body :url])
-        id (.toString (java.util.UUID/randomUUID))
-        entity {:url url :id id}]
-    (transaction
-     (insert urls (values entity)))
-    {:status 201 :body entity}))
+        row (create-url! url)]
+    {:status 201 :body row}))

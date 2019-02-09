@@ -1,11 +1,11 @@
 (ns routes-test
   (:refer-clojure :exclude [update])
   (:require [clojure.test :refer :all]
-            [cheshire.core :as cheshire]
-            [korma.core :refer :all]
+            [clojure.java.jdbc :as jdbc]
+            [clojure.data.json :as json]
             [test-helpers :refer [with-database-reset]]
             [app :refer [app]]
-            [urls :refer [urls]]))
+            [db.core :refer [connection-2]]))
 
 (use-fixtures :each with-database-reset)
 
@@ -20,7 +20,8 @@
     (let [req {:request-method :get
                :uri "/urls/12345"}
           res (app req)
-          body (cheshire/parse-string (:body res) true)]
+          body (json/read-str (:body res)
+                              :key-fn keyword)]
       (is (= {:id "12345" :url "https://someawesomewebsite.com"}
              body)))))
 
@@ -30,7 +31,8 @@
                :uri "/urls"
                :body {:url "https://yetanotherwebsite.com"}}
           res (app req)
-          body (cheshire/parse-string (:body res) true)]
+          body (json/read-str (:body res)
+                              :key-fn keyword)]
       (is (= 201 (:status res)))
       (is (= "https://yetanotherwebsite.com" (:url body)))
       (is (string? (:id body)))))
@@ -39,9 +41,10 @@
                :uri "/urls"
                :body {:url "https://website4you.com"}}
           res (app req)
-          body (cheshire/parse-string (:body res) true)
-          created-entity (first (select urls (where body)))]
+          query ["SELECT * FROM urls WHERE url = ?" "https://website4you.com"]
+          result (jdbc/query connection-2 query)
+          created-entity (first result)]
       (is (= "https://website4you.com" (:url created-entity)))))
   (testing "should respond with 400 when the input data is invalid"
     ;; TODO: add a failing test, then add code so that it passes
-    ))
+))

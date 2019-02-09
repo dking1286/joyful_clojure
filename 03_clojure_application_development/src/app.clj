@@ -9,5 +9,8 @@
   (-> root-handler
       wrap-error-handling
       wrap-logging
+      ;; Serialize the response body into JSON
       wrap-json-response
+      ;; If the request body contains JSON, parse it into a Clojure
+      ;; data structure, converting string keys to keywords
       (wrap-json-body {:keywords? true})))

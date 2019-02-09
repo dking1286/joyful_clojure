@@ -1,7 +1,7 @@
 (ns test-helpers
   (:require [environ.core :refer [env]]
             [db.migration :refer [migrate-up! migrate-down!]]
-            [db.seed :refer [seed-all!]]))
+            [db.seed :refer [insert-all-seeds!]]))
 
 (defn with-database-reset
   [run-tests]
@@ -14,5 +14,5 @@
                      :actual (:environment env)})))
   (migrate-down!)
   (migrate-up!)
-  (seed-all!)
+  (insert-all-seeds!)
   (run-tests))

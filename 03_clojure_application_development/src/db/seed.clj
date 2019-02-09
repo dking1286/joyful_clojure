@@ -1,25 +1,22 @@
 (ns db.seed
-  (:refer-clojure :exclude [update])
   (:import [org.postgresql.util PSQLException])
   (:require [clojure.java.io :as io]
+            [clojure.java.jdbc :as jdbc]
             [clojure.edn :as edn]
-            [korma.core :refer :all]
-            [korma.db :refer [transaction]]))
+            [db.core :refer [connection-2]]))
 
-(defn insert-all-ignore-duplicates!
-  [seeds]
-  (doseq [seed seeds]
-    (let [db-entity (deref (resolve (get seed :entity)))]
-      (try
-        (insert db-entity (values (get seed :data)))
-        (catch PSQLException e
-          ;; Do nothing
-          )))))
+(defn insert-seed!
+  "Inserts a single seed definition into the database."
+  [seed]
+  (doseq [{:keys [table data]} seed]
+    (jdbc/insert-multi! connection-2 table data)))
 
-(defn seed-all!
+(defn insert-all-seeds!
+  "Reads all files in the seeds directory and inserts their contents into
+   the database."
   []
-  (let [seed-files (.listFiles (io/file (io/resource "seeds")))]
-    (doseq [seed-file seed-files]
-      (-> (slurp seed-file)
-          edn/read-string
-          insert-all-ignore-duplicates!))))
+  (->> (.listFiles (io/file (io/resource "seeds")))
+       (map slurp)
+       (map edn/read-string)
+       (map insert-seed!)
+       doall))

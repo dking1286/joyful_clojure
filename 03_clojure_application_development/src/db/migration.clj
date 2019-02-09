@@ -1,29 +1,24 @@
 (ns db.migration
-  (:refer-clojure :exclude [update])
   (:import [org.postgresql.util PSQLException])
   (:require [clojure.string :as string]
-            [ragtime.jdbc :as jdbc]
+            [clojure.java.jdbc :as jdbc]
+            [ragtime.jdbc]
             [ragtime.repl :as ragtime]
-            [korma.core :refer :all]
-            [db.core :refer [db connection]]
+            [db.core :refer [connection-2]]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]))
 
-(defentity ragtime-migrations
-  (table :ragtime_migrations)
-  (database db))
-
 (defn get-migration-config
   []
-  {:datastore (jdbc/sql-database connection)
-   :migrations (jdbc/load-resources "migrations")})
+  {:datastore (ragtime.jdbc/sql-database connection-2)
+   :migrations (ragtime.jdbc/load-resources "migrations")})
 
 (defn get-migration-count
   []
   (try
-    (-> (select ragtime-migrations (aggregate (count :id) :count))
-        first
-        :count)
+    (let [query ["SELECT COUNT(id) AS count FROM ragtime_migrations"]
+          result (jdbc/query connection-2 query)]
+      (:count (first result)))
     (catch PSQLException e
       (if (string/includes? (.getMessage e)
                             "\"ragtime_migrations\" does not exist")
