@@ -1,7 +1,7 @@
 (ns urls
   (:refer-clojure :exclude [update])
   (:require [clojure.java.jdbc :as jdbc]
-            [db.core :refer [connection-2]]
+            [db.core :refer [connection]]
             [utils.errors :refer [not-found]]))
 
 (defn get-url-by-id
@@ -9,7 +9,7 @@
    url exists."
   [id]
   (let [query ["SELECT * FROM urls WHERE id = ?"  id]
-        result (jdbc/query connection-2 query)]
+        result (jdbc/query connection query)]
     (first result)))
 
 (defn create-url!
@@ -18,7 +18,7 @@
   [url]
   (let [id (.toString (java.util.UUID/randomUUID))
         row {:url url :id id}
-        result (jdbc/insert! connection-2 :urls row)]
+        result (jdbc/insert! connection :urls row)]
     (first result)))
 
 (defn get-url-handler

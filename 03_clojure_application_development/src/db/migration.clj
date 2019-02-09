@@ -4,20 +4,20 @@
             [clojure.java.jdbc :as jdbc]
             [ragtime.jdbc]
             [ragtime.repl :as ragtime]
-            [db.core :refer [connection-2]]
+            [db.core :refer [connection]]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]))
 
 (defn get-migration-config
   []
-  {:datastore (ragtime.jdbc/sql-database connection-2)
+  {:datastore (ragtime.jdbc/sql-database connection)
    :migrations (ragtime.jdbc/load-resources "migrations")})
 
 (defn get-migration-count
   []
   (try
     (let [query ["SELECT COUNT(id) AS count FROM ragtime_migrations"]
-          result (jdbc/query connection-2 query)]
+          result (jdbc/query connection query)]
       (:count (first result)))
     (catch PSQLException e
       (if (string/includes? (.getMessage e)

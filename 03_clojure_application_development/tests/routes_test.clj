@@ -5,7 +5,7 @@
             [clojure.data.json :as json]
             [test-helpers :refer [with-database-reset]]
             [app :refer [app]]
-            [db.core :refer [connection-2]]))
+            [db.core :refer [connection]]))
 
 (use-fixtures :each with-database-reset)
 
@@ -42,7 +42,7 @@
                :body {:url "https://website4you.com"}}
           res (app req)
           query ["SELECT * FROM urls WHERE url = ?" "https://website4you.com"]
-          result (jdbc/query connection-2 query)
+          result (jdbc/query connection query)
           created-entity (first result)]
       (is (= "https://website4you.com" (:url created-entity)))))
   (testing "should respond with 400 when the input data is invalid"
