@@ -6,6 +6,7 @@
             [routes :refer [root-handler]]))
 
 (def app
+  "Main Ring handler for the application"
   (-> root-handler
       wrap-error-handling
       wrap-logging

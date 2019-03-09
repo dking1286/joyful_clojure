@@ -1,5 +1,4 @@
 (ns urls
-  (:refer-clojure :exclude [update])
   (:require [clojure.java.jdbc :as jdbc]
             [db.core :refer [connection]]
             [utils.errors :refer [not-found]]))

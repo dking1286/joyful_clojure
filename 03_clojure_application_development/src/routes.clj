@@ -1,9 +1,9 @@
 (ns routes
   (:require [compojure.core :refer :all]
-            [compojure.route :refer [not-found]]
+            [compojure.route :as route]
             [urls]))
 
 (defroutes root-handler
   (GET "/urls/:id" [] urls/get-url-handler)
   (POST "/urls" [] urls/create-url-handler)
-  (not-found "Not found"))
+  (route/not-found "Not found"))
