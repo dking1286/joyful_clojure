@@ -1,5 +1,4 @@
 (ns routes-test
-  (:refer-clojure :exclude [update])
   (:require [clojure.test :refer :all]
             [clojure.java.jdbc :as jdbc]
             [clojure.data.json :as json]
@@ -44,7 +43,4 @@
           query ["SELECT * FROM urls WHERE url = ?" "https://website4you.com"]
           result (jdbc/query connection query)
           created-entity (first result)]
-      (is (= "https://website4you.com" (:url created-entity)))))
-  (testing "should respond with 400 when the input data is invalid"
-    ;; TODO: add a failing test, then add code so that it passes
-))
+      (is (= "https://website4you.com" (:url created-entity))))))

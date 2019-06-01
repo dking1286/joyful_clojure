@@ -8,8 +8,8 @@
 (def app
   "Main Ring handler for the application"
   (-> root-handler
-      wrap-error-handling
       wrap-logging
+      wrap-error-handling
       ;; Serialize the response body into JSON
       wrap-json-response
       ;; If the request body contains JSON, parse it into a Clojure

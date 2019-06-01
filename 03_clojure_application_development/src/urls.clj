@@ -7,7 +7,7 @@
   "Gets the url from the database with the given id, or nil if no such
    url exists."
   [id]
-  (let [query ["SELECT * FROM urls WHERE id = ?"  id]
+  (let [query ["SELECT * FROM urls WHERE id = ?" id]
         result (jdbc/query connection query)]
     (first result)))
 

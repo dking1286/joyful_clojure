@@ -11,7 +11,7 @@
                  [clj-time "0.15.0"]
                  [com.taoensso/timbre "4.10.0"]]
 
-  :plugins [[lein-ring "0.12.4"]
+  :plugins [[lein-ring "0.12.5"]
             [lein-environ "1.1.0"]]
 
   :source-paths ["src"]
