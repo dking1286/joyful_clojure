@@ -3,11 +3,7 @@
             [environ.core :refer [env]]))
 
 (def config
-  {:db {}
-   :urls {:db (ig/ref :db)}
-   :routes {:urls (ig/ref :urls)}
-   :app {:routes (ig/ref :routes)}
-   :server {:handler (ig/ref :app)}})
+  {:db {}})
 
 (def test-config
   (merge config {:db {:name "url_shortening_db_test"}}))

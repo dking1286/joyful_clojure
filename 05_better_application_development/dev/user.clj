@@ -11,7 +11,7 @@
   []
   (println "Starting system...")
   (let [new-system (ig/init sys/config)]
-    (alter-var-root (var system) (constantly new-system))))
+    (alter-var-root #'system (constantly new-system))))
 
 (defn stop
   []

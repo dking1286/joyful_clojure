@@ -2,7 +2,8 @@
   (:import [com.mchange.v2.c3p0 ComboPooledDataSource])
   (:require [clojure.spec.alpha :as s]
             [integrant.core :as ig]
-            [environ.core :refer [env]]))
+            [environ.core :refer [env]]
+            [com.shortify.utils.spec :as su]))
 
 (s/def ::host string?)
 (s/def ::port int?)
@@ -11,7 +12,7 @@
 (s/def ::password string?)
 (s/def ::classname string?)
 (s/def ::subprotocol string?)
-(s/def ::datasource #(instance? ComboPooledDataSource))
+(s/def ::datasource #(instance? ComboPooledDataSource %))
 
 (s/def ::db-spec
        (s/keys :req-un [::host ::port ::name ::user ::password]))
@@ -28,15 +29,15 @@
 (defn- env-spec
   []
   {:host (:database-host env)
-   :port (:database-port env)
+   :port (Integer/parseUnsignedInt (:database-port env))
    :name (:database-name env)
    :user (:database-username env)
    :password (:database-password env)})
 
 (defn- db-spec
   [overrides]
-  {:pre [(s/valid? ::db-spec-partial overrides)]
-   :post [(s/valid? ::db-spec %)]}
+  {:pre [(su/valid? ::db-spec-partial overrides)]
+   :post [(su/valid? ::db-spec %)]}
   (merge (env-spec) overrides))
 
 (defn- subname
@@ -45,7 +46,7 @@
 
 (defn- db-spec-long-form
   [{:keys [host port name user password]}]
-  {:post [(s/valid? ::db-spec-long-form %)]}
+  {:post [(su/valid? ::db-spec-long-form %)]}
   {:classname "org.postgresql.jdbc.Driver"
    :subprotocol "postgres"
    :subname (subname host port name)
@@ -54,8 +55,8 @@
 
 (defn- pool
   [spec]
-  {:pre [(s/valid? ::db-spec-long-form spec)]
-   :post [(s/valid? ::db %)]}
+  {:pre [(su/valid? ::db-spec-long-form spec)]
+   :post [(su/valid? ::db %)]}
   (let [cpds (doto (ComboPooledDataSource.)
                (.setDriverClass (:classname spec))
                (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
