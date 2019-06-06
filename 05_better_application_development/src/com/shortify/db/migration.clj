@@ -46,20 +46,20 @@
 (defn migrate-up!
   "Runs all pending migrations on the database."
   [db]
-  {:pre [(su/valid? :db-core/db db)]}
+  {:pre [(su/valid? :com.shortify.db.core/db db)]}
   (ragtime/migrate (get-migration-config db)))
 
 (defn rollback!
   "Rolls back the most recent migration on the database."
   [db]
-  {:pre [(su/valid? :db-core/db db)]}
+  {:pre [(su/valid? :com.shortify.db.core/db db)]}
   (ragtime/rollback (get-migration-config db)))
 
 (defn migrate-down!
   "Rolls back all migrations on the database. Use with caution, this
    will delete all existing data."
   [db]
-  {:pre [(su/valid? :db-core/db db)]}
+  {:pre [(su/valid? :com.shortify.db.core/db db)]}
   (let [num-migrations (get-migration-count db)]
     (dotimes [_ num-migrations]
       (rollback! db))))

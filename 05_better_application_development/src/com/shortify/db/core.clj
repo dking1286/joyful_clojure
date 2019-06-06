@@ -7,7 +7,8 @@
 
 (s/def ::host string?)
 (s/def ::port int?)
-(s/def ::name string?)
+(s/def ::dbtype #{"postgresql"})
+(s/def ::dbname string?)
 (s/def ::user string?)
 (s/def ::password string?)
 (s/def ::classname string?)
@@ -15,10 +16,10 @@
 (s/def ::datasource #(instance? ComboPooledDataSource %))
 
 (s/def ::db-spec
-       (s/keys :req-un [::host ::port ::name ::user ::password]))
+       (s/keys :req-un [::host ::port ::dbname ::user ::password]))
 
 (s/def ::db-spec-partial
-       (s/keys :opt-un [::host ::port ::name ::user ::password]))
+       (s/keys :opt-un [::host ::port ::dbname ::user ::password]))
 
 (s/def ::db-spec-long-form
        (s/keys :req-un [::classname ::subprotocol ::subname ::user ::password]))
@@ -27,33 +28,51 @@
        (s/keys :req-un [::datasource]))
 
 (defn- env-spec
+  "Extracts database configuration options from environment variables."
   []
   {:host (:database-host env)
    :port (Integer/parseUnsignedInt (:database-port env))
-   :name (:database-name env)
+   :dbtype (:database-type env)
+   :dbname (:database-name env)
    :user (:database-username env)
    :password (:database-password env)})
 
 (defn- db-spec
+  "Merges database configuration options from environment variables with a map
+  of overrides."
   [overrides]
   {:pre [(su/valid? ::db-spec-partial overrides)]
    :post [(su/valid? ::db-spec %)]}
   (merge (env-spec) overrides))
 
 (defn- subname
+  "Constructs the subname required by the 'long-form' database spec."
   [host port name]
-  (str "//" host "/" port "/" name))
+  (str "//" host ":" port "/" name))
+
+(defn- classname
+  "Gets the classname of the driver associated with a database type."
+  [dbtype]
+  (case dbtype
+    "postgresql" "org.postgresql.Driver"
+    "mysql" "com.mysql.jdbc.Driver"
+    nil))
 
 (defn- db-spec-long-form
-  [{:keys [host port name user password]}]
+  "Constructs the 'long-form' database spec required by the c3p0 connection
+  pooling library."
+  [{:keys [host port dbname dbtype user password]}]
   {:post [(su/valid? ::db-spec-long-form %)]}
-  {:classname "org.postgresql.jdbc.Driver"
-   :subprotocol "postgres"
-   :subname (subname host port name)
+  {:classname (classname dbtype)
+   :subprotocol dbtype
+   :subname (subname host port dbname)
    :user user
    :password password})
 
 (defn- pool
+  "Creates a map containing a connection pool for the configured database.
+  This map can be passed in as the first argument of all clojure.java.jdbc
+  functions."
   [spec]
   {:pre [(su/valid? ::db-spec-long-form spec)]
    :post [(su/valid? ::db %)]}
