@@ -1,9 +1,9 @@
-(ns com.shortify.db.core
+(ns com.shortify.api.db.core
   (:import [com.mchange.v2.c3p0 ComboPooledDataSource])
   (:require [clojure.spec.alpha :as s]
             [integrant.core :as ig]
             [environ.core :refer [env]]
-            [com.shortify.utils.spec :as su]))
+            [com.shortify.api.utils.spec :as su]))
 
 (s/def ::host string?)
 (s/def ::port int?)

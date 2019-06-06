@@ -1,4 +1,4 @@
-(ns com.shortify.utils.spec
+(ns com.shortify.api.utils.spec
   (:require [clojure.spec.alpha :as s]))
 
 (defn valid?

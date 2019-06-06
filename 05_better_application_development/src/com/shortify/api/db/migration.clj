@@ -1,4 +1,4 @@
-(ns com.shortify.db.migration
+(ns com.shortify.api.db.migration
   (:import [org.postgresql.util PSQLException])
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as string]
@@ -7,8 +7,8 @@
             [ragtime.repl :as ragtime]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
-            [com.shortify.db.core :as db-core]
-            [com.shortify.utils.spec :as su]))
+            [com.shortify.api.db.core :as db-core]
+            [com.shortify.api.utils.spec :as su]))
 
 (defn- get-migration-config
   "Constructs the configuration map needed by Ragtime to run migrations
@@ -46,20 +46,20 @@
 (defn migrate-up!
   "Runs all pending migrations on the database."
   [db]
-  {:pre [(su/valid? :com.shortify.db.core/db db)]}
+  {:pre [(su/valid? :com.shortify.api.db.core/db db)]}
   (ragtime/migrate (get-migration-config db)))
 
 (defn rollback!
   "Rolls back the most recent migration on the database."
   [db]
-  {:pre [(su/valid? :com.shortify.db.core/db db)]}
+  {:pre [(su/valid? :com.shortify.api.db.core/db db)]}
   (ragtime/rollback (get-migration-config db)))
 
 (defn migrate-down!
   "Rolls back all migrations on the database. Use with caution, this
    will delete all existing data."
   [db]
-  {:pre [(su/valid? :com.shortify.db.core/db db)]}
+  {:pre [(su/valid? :com.shortify.api.db.core/db db)]}
   (let [num-migrations (get-migration-count db)]
     (dotimes [_ num-migrations]
       (rollback! db))))

@@ -1,9 +1,9 @@
 (ns user
   (:require [integrant.core :as ig]
             [clojure.tools.namespace.repl :as ctnr]
-            [com.shortify.system :as sys]
-            [com.shortify.db.migration :as migration]
-            [com.shortify.db.seed :as seed]))
+            [com.shortify.api.system :as sys]
+            [com.shortify.api.db.migration :as migration]
+            [com.shortify.api.db.seed :as seed]))
 
 (def system nil)
 
