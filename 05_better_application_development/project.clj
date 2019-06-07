@@ -20,7 +20,8 @@
 
   :profiles
   {:dev {:env {:environment "development"}
-         :source-paths ["src" "dev"]}
+         :source-paths ["src" "dev"]
+         :dependencies [[orchestra "2018.12.06-2"]]}
 
    :test {:env {:environment "test"}
           :dependencies [[pjstadig/humane-test-output "0.9.0"]]

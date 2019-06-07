@@ -1,9 +1,21 @@
 (ns user
   (:require [integrant.core :as ig]
-            [clojure.tools.namespace.repl :as ctnr]
+            [orchestra.spec.test :as orchestra]
+            [clojure.tools.namespace.repl :as repl]
             [com.shortify.api.system :as sys]
             [com.shortify.api.db.migration :as migration]
             [com.shortify.api.db.seed :as seed]))
+
+(def dev-config
+  (merge sys/config {:instrumentation {}}))
+
+(defmethod ig/init-key :instrumentation
+  [_ _]
+  (orchestra/instrument))
+
+(defmethod ig/halt-key! :instrumentation
+  [_ _]
+  (orchestra/unstrument))
 
 (def system nil)
 
@@ -12,7 +24,7 @@
   'system' var."
   []
   (println "Starting system...")
-  (let [new-system (ig/init sys/config)]
+  (let [new-system (ig/init dev-config)]
     (alter-var-root #'system (constantly new-system))))
 
 (defn stop
@@ -29,7 +41,7 @@
   system."
   []
   (stop)
-  (ctnr/refresh :after 'user/start))
+  (repl/refresh :after 'user/start))
 
 (defn migrate-up!
   []

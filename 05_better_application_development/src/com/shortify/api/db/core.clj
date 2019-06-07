@@ -2,8 +2,7 @@
   (:import [com.mchange.v2.c3p0 ComboPooledDataSource])
   (:require [clojure.spec.alpha :as s]
             [integrant.core :as ig]
-            [environ.core :refer [env]]
-            [com.shortify.api.utils.spec :as su]))
+            [environ.core :refer [env]]))
 
 (s/def ::host string?)
 (s/def ::port int?)
@@ -16,16 +15,16 @@
 (s/def ::datasource #(instance? ComboPooledDataSource %))
 
 (s/def ::db-spec
-       (s/keys :req-un [::host ::port ::dbname ::user ::password]))
+  (s/keys :req-un [::host ::port ::dbname ::user ::password]))
 
 (s/def ::db-spec-partial
-       (s/keys :opt-un [::host ::port ::dbname ::user ::password]))
+  (s/keys :opt-un [::host ::port ::dbname ::user ::password]))
 
 (s/def ::db-spec-long-form
-       (s/keys :req-un [::classname ::subprotocol ::subname ::user ::password]))
+  (s/keys :req-un [::classname ::subprotocol ::subname ::user ::password]))
 
 (s/def ::db
-       (s/keys :req-un [::datasource]))
+  (s/keys :req-un [::datasource]))
 
 (defn- env-spec
   "Extracts database configuration options from environment variables."
@@ -37,12 +36,14 @@
    :user (:database-username env)
    :password (:database-password env)})
 
+(s/fdef db-spec
+        :args (s/cat :overrides ::db-spec-partial)
+        :ret ::db-spec)
+
 (defn- db-spec
   "Merges database configuration options from environment variables with a map
   of overrides."
   [overrides]
-  {:pre [(su/valid? ::db-spec-partial overrides)]
-   :post [(su/valid? ::db-spec %)]}
   (merge (env-spec) overrides))
 
 (defn- subname
@@ -58,24 +59,25 @@
     "mysql" "com.mysql.jdbc.Driver"
     nil))
 
-(defn- db-spec-long-form
+(defn db-spec-long-form
   "Constructs the 'long-form' database spec required by the c3p0 connection
   pooling library."
   [{:keys [host port dbname dbtype user password]}]
-  {:post [(su/valid? ::db-spec-long-form %)]}
   {:classname (classname dbtype)
    :subprotocol dbtype
    :subname (subname host port dbname)
    :user user
    :password password})
 
+(s/fdef pool
+        :args (s/cat :spec ::db-spec-long-form)
+        :ret ::db)
+
 (defn- pool
   "Creates a map containing a connection pool for the configured database.
   This map can be passed in as the first argument of all clojure.java.jdbc
   functions."
   [spec]
-  {:pre [(su/valid? ::db-spec-long-form spec)]
-   :post [(su/valid? ::db %)]}
   (let [cpds (doto (ComboPooledDataSource.)
                (.setDriverClass (:classname spec))
                (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))

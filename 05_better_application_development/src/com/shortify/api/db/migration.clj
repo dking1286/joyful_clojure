@@ -7,8 +7,7 @@
             [ragtime.repl :as ragtime]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
-            [com.shortify.api.db.core :as db-core]
-            [com.shortify.api.utils.spec :as su]))
+            [com.shortify.api.db.core :as db-core]))
 
 (defn- get-migration-config
   "Constructs the configuration map needed by Ragtime to run migrations
@@ -31,6 +30,9 @@
         0
         (throw e)))))
 
+(s/fdef create-migration!
+        :args (s/cat :name string?))
+
 (defn create-migration!
   "Creates skeleton migration files in the migrations directory,
    labeling the files with the current timestamp."
@@ -43,23 +45,29 @@
     (spit up-name "")
     (spit down-name "")))
 
+(s/fdef migrate-up!
+        :args (s/cat :db :com.shortify.api.db.core/db))
+
 (defn migrate-up!
   "Runs all pending migrations on the database."
   [db]
-  {:pre [(su/valid? :com.shortify.api.db.core/db db)]}
   (ragtime/migrate (get-migration-config db)))
+
+(s/fdef rollback!
+        :args (s/cat :db :com.shortify.api.db.core/db))
 
 (defn rollback!
   "Rolls back the most recent migration on the database."
   [db]
-  {:pre [(su/valid? :com.shortify.api.db.core/db db)]}
   (ragtime/rollback (get-migration-config db)))
+
+(s/fdef migrate-down!
+        :args (s/cat :db :com.shortify.api.db.core/db))
 
 (defn migrate-down!
   "Rolls back all migrations on the database. Use with caution, this
    will delete all existing data."
   [db]
-  {:pre [(su/valid? :com.shortify.api.db.core/db db)]}
   (let [num-migrations (get-migration-count db)]
     (dotimes [_ num-migrations]
       (rollback! db))))
