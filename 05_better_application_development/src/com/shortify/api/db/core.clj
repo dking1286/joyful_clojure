@@ -94,3 +94,7 @@
   (-> (db-spec config)
       db-spec-long-form
       pool))
+
+(defmethod ig/halt-key! :db
+  [_ {:keys [datasource]}]
+  (.close datasource))
