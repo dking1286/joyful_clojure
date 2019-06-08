@@ -10,8 +10,8 @@
   (.toString (java.util.UUID/randomUUID)))
 
 (defprotocol IUrls
-  (get-url [this id])
-  (create-url [this data]))
+  (get-url [this id] "Retrieves a URL recordyb id.")
+  (create-url [this data] "Creates a new URL record."))
 
 (defrecord Urls [db]
   IUrls
