@@ -19,11 +19,11 @@
 (defn- create-handler
   "Composes individual route handlers into the root handler for the
   application."
-  [urls-handler]
+  [db]
   (routes
     (GET "/" [] "running")
-    (GET "/urls/:id" [] (partial uh/get-url urls-handler))
-    (POST "/urls" [] (partial uh/create-url urls-handler))
+    (GET "/urls/:id" [] #(uh/get-url db %))
+    (POST "/urls" [] #(uh/create-url db %))
     (route/not-found "The requested resource was not found.")))
 
 (defn- wrap-middleware
@@ -36,6 +36,6 @@
       (wrap-json-body {:keywords? true})))
 
 (defmethod ig/init-key :app
-  [_ {:keys [urls-handler] :as config}]
-  (-> (create-handler urls-handler)
+  [_ {:keys [db] :as config}]
+  (-> (create-handler db)
       (wrap-middleware config)))

@@ -9,25 +9,18 @@
   []
   (.toString (java.util.UUID/randomUUID)))
 
-(defprotocol IUrls
-  (get-url [this id] "Retrieves a URL recordyb id.")
-  (create-url [this data] "Creates a new URL record."))
+(defn get-url
+  "Retrieves a URL record by id."
+  [db id]
+  (let [query ["SELECT * FROM urls WHERE id = ?" id]
+        result (jdbc/query db query)]
+    (first result)))
 
-(defrecord Urls [db]
-  IUrls
-  (get-url [this id]
-    (let [query ["SELECT * FROM urls WHERE id = ?" id]
-          result (jdbc/query db query)
-          url (first result)]
-      url))
-
-  (create-url [this data]
-    (let [{:keys [id url]} data
-          id (or id (random-uuid))
-          row {:url url :id id}
-          result (jdbc/insert! db :urls row)]
-      (first result))))
-
-(defmethod ig/init-key :urls
-  [_ {:keys [factory config]}]
-  (factory config))
+(defn create-url
+  "Creates a new URL record."
+  [db data]
+  (let [{:keys [id url]} data
+        id (or id (random-uuid))
+        row {:url url :id id}
+        result (jdbc/insert! db :urls row)]
+    (first result)))
