@@ -51,19 +51,16 @@
   [host port name]
   (str "//" host ":" port "/" name))
 
-(defn- classname
-  "Gets the classname of the driver associated with a database type."
-  [dbtype]
-  (case dbtype
-    "postgresql" "org.postgresql.Driver"
-    "mysql" "com.mysql.jdbc.Driver"
-    nil))
+;; FIXME Add documentation
+(def driver-classnames
+  {"postgresql" "org.postgresql.Driver"
+   "mysql" "com.mysql.jdbc.Driver"})
 
 (defn db-spec-long-form
   "Constructs the 'long-form' database spec required by the c3p0 connection
   pooling library."
   [{:keys [host port dbname dbtype user password]}]
-  {:classname (classname dbtype)
+  {:classname (driver-classnames dbtype)
    :subprotocol dbtype
    :subname (subname host port dbname)
    :user user
@@ -78,16 +75,17 @@
   This map can be passed in as the first argument of all clojure.java.jdbc
   functions."
   [spec]
-  (let [cpds (doto (ComboPooledDataSource.)
-               (.setDriverClass (:classname spec))
-               (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
-               (.setUser (:user spec))
-               (.setPassword (:password spec))
-               ;; expire excess connections after 30 minutes of inactivity:
-               (.setMaxIdleTimeExcessConnections (* 30 60))
-               ;; expire connections after 3 hours of inactivity:
-               (.setMaxIdleTime (* 3 60 60)))]
-    {:datasource cpds}))
+  (let [{:keys [classname subprotocol subname user password]} spec
+        datasource (doto (ComboPooledDataSource.)
+                     (.setDriverClass classname)
+                     (.setJdbcUrl (str "jdbc:" subprotocol ":" subname))
+                     (.setUser user)
+                     (.setPassword password)
+                     ;; expire excess connections after 30 minutes of inactivity
+                     (.setMaxIdleTimeExcessConnections (* 30 60))
+                     ;; expire connections after 3 hours of inactivity:
+                     (.setMaxIdleTime (* 3 60 60)))]
+    {:datasource datasource}))
 
 (defmethod ig/init-key :db
   [_ config]

@@ -5,7 +5,8 @@
             [compojure.core :refer :all]
             [compojure.route :as route]
             [com.shortify.api.middleware.logging :refer [wrap-logging]]
-            [com.shortify.api.middleware.error-handling :refer [wrap-error-handling]]
+            [com.shortify.api.middleware.error-handling
+             :refer [wrap-error-handling]]
             [com.shortify.api.urls.handler :as uh]))
 
 (defn- wrap-if
