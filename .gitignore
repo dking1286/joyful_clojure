@@ -4,7 +4,5 @@
 Clojure REPL
 profiles.clj
 node_modules
-.rebel_readline_history
-figwheel_server.log
 .sass-cache
-*/resources/public/*-out
+.shadow-cljs
