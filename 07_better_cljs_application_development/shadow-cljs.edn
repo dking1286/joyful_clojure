@@ -1,0 +1,14 @@
+;; shadow-cljs configuration
+{:source-paths ["src" "dev" "test"]
+
+ :dependencies [[re-frame "0.10.6"
+                 :exclusions [cljsjs/react cljsjs/react-dom]]
+                [binaryage/devtools "0.9.10"]]
+
+ :dev-http {8080 "target/public"}
+
+ :builds {:app {:target :browser
+                :output-dir "target/public/js"
+                :asset-path "/js"
+                :devtools {:preloads [devtools.preload]}
+                :modules {:main {:entries [com.shortify.frontend.core]}}}}}

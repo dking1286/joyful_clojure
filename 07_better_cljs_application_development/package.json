@@ -1,0 +1,26 @@
+{
+  "name": "07_better_cljs_application_development",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "clean": "rm -rf target",
+    "resources": "mkdir -p target/public && cp resources/public/* target/public",
+    "serve": "shadow-cljs watch app",
+    "start": "npm rum clean && npm run resources && npm run serve"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@material-ui/core": "^4.2.0",
+    "@material-ui/icons": "^4.2.1",
+    "create-react-class": "^15.6.3",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "shadow-cljs": "^2.8.40"
+  }
+}
